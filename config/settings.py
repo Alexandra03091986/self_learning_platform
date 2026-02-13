@@ -8,9 +8,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.getenv("SECRET_KEY")
 
-DEBUG = True
+DEBUG = True if os.getenv("DEBUG") == "True" else False
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["*"]
 
 
 INSTALLED_APPS = [
@@ -20,6 +20,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+
     "rest_framework",
     "rest_framework_simplejwt",
     "django_filters",
@@ -27,6 +28,8 @@ INSTALLED_APPS = [
     "django_celery_beat",
 
     "users",
+    "courses",
+    "tests",
 
 ]
 
@@ -101,9 +104,9 @@ USE_TZ = True
 # Настройка статических файлов
 STATIC_URL = "static/"
 STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")  # Куда собирать статику
-STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, "static"),  # Где искать статику
-]
+# STATICFILES_DIRS = [
+#     os.path.join(BASE_DIR, "static"),  # Где искать статику
+# ]
 
 # Настройка медиафайлов
 MEDIA_URL = "/media/"
