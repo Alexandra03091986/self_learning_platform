@@ -17,3 +17,19 @@ class IsOwner(permissions.BasePermission):
             """Проверяет право доступа к конкретному объекту."""
             return True
         return False
+
+# class IsOwnerOrAdmin(permissions.BasePermission):
+#     def has_object_permission(self, request, view, obj):
+#         # Безопасные методы (GET, HEAD, OPTIONS) — все могут читать
+#         if request.method in permissions.SAFE_METHODS:
+#             return True
+#         # Админ может всё
+#         if request.user.role == 'admin':
+#             return True
+#         # Владелец может редактировать
+#         if hasattr(obj, 'owner'):
+#             return obj.owner == request.user
+#         # Для материалов — проверяем владельца раздела
+#         if hasattr(obj, 'section'):
+#             return obj.section.owner == request.user
+#         return False

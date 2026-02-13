@@ -35,17 +35,17 @@ class LoginView(generics.GenericAPIView):
         })
 
 
-class UserListView(generics.ListAPIView):
-    queryset = User.objects.all()
-    serializer_class = UserSerializer
-    permission_classes = [IsAdmin]
-
-
-class UserDetailView(generics.RetrieveUpdateAPIView):
-    queryset = User.objects.all()
-    serializer_class = UserSerializer
-
-    def get_permissions(self):
-        if self.request.method == 'GET':
-            return [permissions.IsAuthenticated()]
-        return [IsAdmin()]
+# class UserListView(generics.ListAPIView):
+#     queryset = User.objects.all()
+#     serializer_class = UserSerializer
+#     permission_classes = [IsAdmin]
+#
+#
+# class UserDetailView(generics.RetrieveUpdateAPIView):
+#     queryset = User.objects.all()
+#     serializer_class = UserSerializer
+#
+#     def get_permissions(self):
+#         if self.request.method == 'GET':
+#             return [permissions.IsAuthenticated()]
+#         return [IsAdmin()]

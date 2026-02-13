@@ -1,11 +1,19 @@
-from rest_framework.routers import SimpleRouter
+# from rest_framework.routers import SimpleRouter
 from users.apps import UsersConfig
 from django.urls import path
+
+
+from rest_framework_simplejwt.views import (
+    TokenObtainPairView,
+    TokenRefreshView,
+)
+
 
 app_name = UsersConfig.name
 
 # router = SimpleRouter()
 
 urlpatterns = [
-    # path('', )
+    path('login/', TokenObtainPairView.as_view(), name='login'),
+    path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
 ]
