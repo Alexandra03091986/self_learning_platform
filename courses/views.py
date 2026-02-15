@@ -5,6 +5,7 @@ from rest_framework import serializers, permissions
 
 from courses.models import Course, Lesson
 from courses.serializers import CourseSerializer, LessonSerializer
+from users.permissions import IsTeacher, IsOwnerOrAdmin
 
 
 class CourseViewSet(ModelViewSet):
@@ -12,7 +13,23 @@ class CourseViewSet(ModelViewSet):
 
     queryset = Course.objects.all()
     serializer_class = CourseSerializer
-    permission_classes = [permissions.IsAuthenticated]      # IsOwnerOrAdmin
+
+    def get_permissions(self):
+        """
+        Права доступа:
+        - Создание: только преподаватели и админы
+        - Изменение/удаление: владелец или админ
+        - Просмотр: все авторизованные
+        """
+        if self.action == 'create':
+            # Только преподаватели и админы могут создавать
+            return [IsTeacher()]
+        elif self.action in ['update', 'partial_update', 'destroy']:
+            # Для изменения/удаления проверяем владельца или админа
+            return [IsOwnerOrAdmin()]
+        else:
+            # Просмотр - все авторизованные
+            return [permissions.IsAuthenticated()]
 
     def perform_create(self, serializer: serializers.Serializer) -> None:
         """Автоматически устанавливает текущего пользователя как владельца создаваемого объекта."""
@@ -21,31 +38,37 @@ class CourseViewSet(ModelViewSet):
         serializer.save(owner=self.request.user)
 
 
-# class LessonViewSet(ModelViewSet):
-#     queryset = Lesson.objects.all()
-#     serializer_class = LessonSerializer
-#
-#     def get_permissions(self):
-#         if self.action in ['create', 'update', 'partial_update', 'destroy']:
-#             permission_classes = [IsOwnerOrReadOnly]
-#         else:
-#             permission_classes = [permissions.IsAuthenticated]
-#         return [permission() for permission in permission_classes]
-#
-#     def perform_create(self, serializer):
-#         course = serializer.validated_data['course']
-#         if course.owner != self.request.user and self.request.user.role != 'admin':
-#             raise permissions.PermissionDenied('Вы не владелец этого курса')
-#         serializer.save()
-
 class LessonViewSet(ModelViewSet):
     """ViewSet для выполнения всех CRUD операций с уроками."""
     queryset = Lesson.objects.all()
     serializer_class = LessonSerializer
-    permission_classes = [permissions.IsAuthenticated]      # IsOwnerOrAdmin
+
+    def get_permissions(self):
+        """
+        Права доступа:
+        - Создание: только преподаватели и админы
+        - Изменение/удаление: владелец или админ
+        - Просмотр: все авторизованные
+        """
+        if self.action == 'create':
+            return [IsTeacher()]
+        elif self.action in ['update', 'partial_update', 'destroy']:
+            return [IsOwnerOrAdmin()]
+        else:
+            return [permissions.IsAuthenticated()]
 
     def perform_create(self, serializer: serializers.Serializer) -> None:
         """Автоматически устанавливает текущего пользователя как владельца создаваемого объекта."""
+
+        # Проверка аутентификации
         if not self.request.user.is_authenticated:
-            raise NotAuthenticated('Необходимо авторизоваться для создания курса')
+            raise NotAuthenticated('Необходимо авторизоваться для создания урока')
+
+        # Получаем курс из данных
+        course = serializer.validated_data['course']
+
+        # Разрешаем админу или владельцу курса
+        if not (self.request.user.role == 'admin' or course.owner == self.request.user):
+            raise permissions.PermissionDenied('Можно создавать уроки только в своих курсах')
+        # Сохраняем с владельцем
         serializer.save(owner=self.request.user)
