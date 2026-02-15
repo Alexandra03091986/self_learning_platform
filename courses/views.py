@@ -39,7 +39,13 @@ class CourseViewSet(ModelViewSet):
 #         serializer.save()
 
 class LessonViewSet(ModelViewSet):
+    """ViewSet для выполнения всех CRUD операций с уроками."""
     queryset = Lesson.objects.all()
     serializer_class = LessonSerializer
     permission_classes = [permissions.IsAuthenticated]      # IsOwnerOrAdmin
 
+    def perform_create(self, serializer: serializers.Serializer) -> None:
+        """Автоматически устанавливает текущего пользователя как владельца создаваемого объекта."""
+        if not self.request.user.is_authenticated:
+            raise NotAuthenticated('Необходимо авторизоваться для создания курса')
+        serializer.save(owner=self.request.user)

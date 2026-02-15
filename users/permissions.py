@@ -18,6 +18,18 @@ class IsOwner(permissions.BasePermission):
             return True
         return False
 
+class CanViewUser(permissions.BasePermission):
+    """
+    Разрешает просмотр если:
+    - пользователь смотрит сам себя
+    - ИЛИ пользователь - администратор
+    """
+    def has_object_permission(self, request, view, obj):
+        if request.method in permissions.SAFE_METHODS:  # GET
+            return request.user == obj or request.user.role == 'admin'
+        return request.user.role == 'admin'  # PUT/PATCH/DELETE
+
+
 # class IsOwnerOrAdmin(permissions.BasePermission):
 #     def has_object_permission(self, request, view, obj):
 #         # Безопасные методы (GET, HEAD, OPTIONS) — все могут читать
