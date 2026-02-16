@@ -1,17 +1,16 @@
 from django.utils import timezone
-from django.db.models import Q
 from rest_framework import viewsets, status, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.exceptions import PermissionDenied, ValidationError
 
-from .models import Test, Question, AnswerOption, TestAttempt, UserAnswer, TestResult
+from .models import Test, AnswerOption, TestAttempt, UserAnswer, TestResult
 from .serializers import (
     TestSerializer, TestListSerializer, TestDetailStudentSerializer,
-    TestAttemptSerializer, UserAnswerSerializer, SubmitAnswerSerializer,
+    TestAttemptSerializer, UserAnswerSerializer,
     TestSubmitSerializer, TestResultSerializer
 )
-from .permissions import IsTestOwnerOrAdmin, CanTakeTest, IsAttemptOwner
+from .permissions import IsTestOwnerOrAdmin, CanTakeTest, IsAttemptOwner, CanCreateTest
 
 
 class TestViewSet(viewsets.ModelViewSet):
@@ -35,19 +34,26 @@ class TestViewSet(viewsets.ModelViewSet):
         if user.role == 'admin':
             return Test.objects.all()
         elif user.role == 'teacher':
-            # Преподаватели видят тесты своих уроков
-            return Test.objects.filter(owner=user)
+            # Тесты, где преподаватель владелец урока
+            tests_from_lessons = Test.objects.filter(lesson__owner=user)
+            # Тесты, где преподаватель владелец теста
+            tests_owned = Test.objects.filter(owner=user)
+            # Объединяем
+            return (tests_from_lessons | tests_owned).distinct()
         else:
             # Студенты видят только активные тесты доступных уроков
             return Test.objects.filter(is_active=True)
 
     def get_permissions(self):
         """Динамическое определение прав"""
-        # Права для изменения теста (создание, редактирование, удаление)
-        if self.action in ['create', 'update', 'partial_update', 'destroy']:
+        # Для создания теста
+        if self.action == 'create':
+            self.permission_classes = [permissions.IsAuthenticated, CanCreateTest]
+        # Для изменения/удаления используем
+        elif self.action in ['update', 'partial_update', 'destroy']:
             self.permission_classes = [permissions.IsAuthenticated, IsTestOwnerOrAdmin]
         # Права для прохождения теста (специальные действия)
-        elif self.action in ['start_attempt', 'submit_answer']:
+        elif self.action in ['start_attempt', 'submit']:
             self.permission_classes = [permissions.IsAuthenticated, CanTakeTest]
         # Права для просмотра (все остальные действия)
         else:
@@ -180,7 +186,8 @@ class TestViewSet(viewsets.ModelViewSet):
             selected_options = set(answer.selected_options.values_list('id', flat=True))
 
             if question.question_type == 'single':
-                answer.is_correct = (selected_options == correct_options and len(selected_options) == 1)
+                # answer.is_correct = (selected_options == correct_options and len(selected_options) == 1)
+                answer.is_correct = (selected_options == correct_options)
             else:  # multiple
                 answer.is_correct = (selected_options == correct_options)
 
