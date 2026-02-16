@@ -23,6 +23,7 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("courses/", include("courses.urls", namespace="courses")),
     path("users/", include("users.urls", namespace="users")),
+    path("tests/", include("tests.urls", namespace="tests")),
 
     # swagger
     path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
