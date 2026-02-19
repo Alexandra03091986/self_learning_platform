@@ -51,6 +51,8 @@ class Test(models.Model):
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
         verbose_name="Владелец",
         help_text="Владелец теста"
     )
@@ -157,6 +159,7 @@ class AnswerOption(models.Model):
         db_table = "answers"
         verbose_name = "Вариант ответа"
         verbose_name_plural = "Варианты ответов"
+        ordering = ['order']
 
 
 class TestAttempt(models.Model):
