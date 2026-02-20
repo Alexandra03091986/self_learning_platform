@@ -120,27 +120,43 @@ class TestViewSet(viewsets.ModelViewSet):
         serializer = TestSubmitSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        # Получаем или создаем попытку
+        # 1. СНАЧАЛА проверяем лимит попыток (считаем ВСЕ завершенные)
+        completed_count = TestAttempt.objects.filter(
+            test=test,
+            user=request.user,
+            status='completed'
+        ).count()
+
+        if completed_count >= test.attempts_allowed:
+            # Получаем лучший результат для информативного сообщения
+            best_result = TestResult.objects.filter(
+                test=test,
+                user=request.user,
+                status='completed'
+            ).order_by('-percentage').first()
+
+            best_percentage = best_result.percentage if best_result else 0
+
+            raise PermissionDenied(
+                f"Лимит попыток исчерпан ({test.attempts_allowed}). Лучший результат: {best_percentage}%"
+            )
+
+        # 2. Ищем активную попытку
         attempt = TestAttempt.objects.filter(
             test=test,
             user=request.user,
             status='in_progress'
         ).first()
 
+        # 3. Если нет активной, создаем НОВУЮ попытку
         if not attempt:
-            # Проверка лимита попыток
-            attempts_count = TestAttempt.objects.filter(
+            attempt = TestAttempt.objects.create(
                 test=test,
-                user=request.user,
-                status='completed'
-            ).count()
+                user=request.user
+            )
+            print(f"Создана новая попытка {attempt.id} для пользователя {request.user.id}")
 
-            if attempts_count >= test.attempts_allowed:
-                raise PermissionDenied(f"Лимит попыток исчерпан")
-
-            attempt = TestAttempt.objects.create(test=test, user=request.user)
-
-        # Проверка времени
+        # 4. Проверка времени
         if test.time_limit:
             minutes_passed = (timezone.now() - attempt.started_at).total_seconds() / 60
             if minutes_passed > test.time_limit:
@@ -148,7 +164,14 @@ class TestViewSet(viewsets.ModelViewSet):
                 attempt.save()
                 raise ValidationError("Время вышло")
 
-        # Обработка ответов
+        # 5. Проверяем, не отправлял ли уже ответы на ЭТУ попытку
+        if UserAnswer.objects.filter(attempt=attempt).exists():
+            raise ValidationError(
+                f"Вы уже отправили ответы на попытку #{attempt.id}. "
+                f"Для новой попытки вызовите start_attempt"
+            )
+
+        # 6. Обработка ответов
         answers_data = serializer.validated_data['answers']
         total_points = 0
         max_points = 0
@@ -157,13 +180,14 @@ class TestViewSet(viewsets.ModelViewSet):
             max_points += question.points
             user_answer_ids = answers_data.get(str(question.id), [])
 
-            # Создаем ответ
+            # Создаем ответ для ЭТОЙ попытки
             answer = UserAnswer.objects.create(
                 attempt=attempt,
                 question=question
             )
 
-            if user_answer_ids and question.question_type != 'text':
+            # Добавляем выбранные варианты
+            if user_answer_ids:
                 options = AnswerOption.objects.filter(id__in=user_answer_ids, question=question)
                 answer.selected_options.set(options)
 
@@ -172,28 +196,106 @@ class TestViewSet(viewsets.ModelViewSet):
             if answer.is_correct:
                 total_points += question.points
 
-        # Завершаем тест
+        # 7. Завершаем тест
         return self._finish_attempt(test, attempt, total_points, max_points)
+
+        # test = self.get_object()
+        # serializer = TestSubmitSerializer(data=request.data)
+        # serializer.is_valid(raise_exception=True)
+        #
+        # # Получаем или создаем попытку
+        # attempt = TestAttempt.objects.filter(
+        #     test=test,
+        #     user=request.user,
+        #     status='in_progress'
+        # ).first()
+        #
+        # if not attempt:
+        #     # Проверка лимита попыток
+        #     attempts_count = TestAttempt.objects.filter(
+        #         test=test,
+        #         user=request.user,
+        #         status='completed'
+        #     ).count()
+        #
+        #     if attempts_count >= test.attempts_allowed:
+        #         raise PermissionDenied(f"Лимит попыток исчерпан")
+        #
+        #     attempt = TestAttempt.objects.create(test=test, user=request.user)
+        #
+        # # Проверка времени
+        # if test.time_limit:
+        #     minutes_passed = (timezone.now() - attempt.started_at).total_seconds() / 60
+        #     if minutes_passed > test.time_limit:
+        #         attempt.status = 'timeout'
+        #         attempt.save()
+        #         raise ValidationError("Время вышло")
+        #
+        # # Проверяем, не отправлял ли уже ответы
+        # if UserAnswer.objects.filter(attempt=attempt).exists():
+        #     raise ValidationError("Вы уже отправили ответы на этот тест")
+        #
+        # # Обработка ответов
+        # answers_data = serializer.validated_data['answers']
+        # total_points = 0
+        # max_points = 0
+        #
+        # for question in test.questions.all():
+        #     max_points += question.points
+        #     user_answer_ids = answers_data.get(str(question.id), [])
+        #
+        #     # Создаем ответ
+        #     answer, created = UserAnswer.objects.update_or_create(
+        #         attempt=attempt,
+        #         question=question,
+        #         defaults={}
+        #     )
+        #
+        #     # Очищаем старые выбранные опции
+        #     answer.selected_options.clear()
+        #
+        #     # Добавляем выбранные варианты
+        #     if user_answer_ids:
+        #         options = AnswerOption.objects.filter(id__in=user_answer_ids, question=question)
+        #         answer.selected_options.set(options)
+        #
+        #     # Оцениваем ответ
+        #     self._evaluate_answer(answer, question)
+        #     if answer.is_correct:
+        #         total_points += question.points
+        #
+        # # Завершаем тест
+        # return self._finish_attempt(test, attempt, total_points, max_points)
 
     def _evaluate_answer(self, answer, question):
         """Оценка ответа на вопрос"""
-        if question.question_type == 'text':
-            # Текстовые ответы требуют ручной проверки
-            answer.is_correct = None
-            answer.points_earned = 0
-        else:
-            correct_options = set(question.answers.filter(is_correct=True).values_list('id', flat=True))
-            selected_options = set(answer.selected_options.values_list('id', flat=True))
+        correct_options = set(question.answers.filter(is_correct=True).values_list('id', flat=True))
+        selected_options = set(answer.selected_options.values_list('id', flat=True))
 
-            if question.question_type == 'single':
-                # answer.is_correct = (selected_options == correct_options and len(selected_options) == 1)
-                answer.is_correct = (selected_options == correct_options)
-            else:  # multiple
-                answer.is_correct = (selected_options == correct_options)
+        if question.question_type == 'single':
+            answer.is_correct = (selected_options == correct_options)
+        else:  # multiple
+            answer.is_correct = (selected_options == correct_options)
 
-            answer.points_earned = question.points if answer.is_correct else 0
-
+        answer.points_earned = question.points if answer.is_correct else 0
         answer.save()
+        # if question.question_type == 'text':
+        #     # Текстовые ответы требуют ручной проверки
+        #     answer.is_correct = None
+        #     answer.points_earned = 0
+        # else:
+        #     correct_options = set(question.answers.filter(is_correct=True).values_list('id', flat=True))
+        #     selected_options = set(answer.selected_options.values_list('id', flat=True))
+        #
+        #     if question.question_type == 'single':
+        #         # answer.is_correct = (selected_options == correct_options and len(selected_options) == 1)
+        #         answer.is_correct = (selected_options == correct_options)
+        #     else:  # multiple
+        #         answer.is_correct = (selected_options == correct_options)
+        #
+        #     answer.points_earned = question.points if answer.is_correct else 0
+        #
+        # answer.save()
 
     def _finish_attempt(self, test, attempt, total_points, max_points):
         """Завершение попытки и сохранение результата"""
@@ -208,22 +310,34 @@ class TestViewSet(viewsets.ModelViewSet):
         attempt.passed = passed
         attempt.save()
 
-        # Создаем результат
-        result, created = TestResult.objects.get_or_create(
+        # Создаем результат (НЕ распаковываем!)
+        result = TestResult.objects.create(
             attempt=attempt,
-            defaults={
-                'user': attempt.user,
-                'test': test,
-                'score': total_points,
-                'max_score': max_points,
-                'percentage': percentage,
-                'passed': passed
-            }
+            user=attempt.user,
+            test=test,
+            score=total_points,
+            max_score=max_points,
+            percentage=percentage,
+            passed=passed
         )
+
+        # Проверяем, можно ли создать новую попытку
+        completed_count = TestAttempt.objects.filter(
+            test=test,
+            user=attempt.user,
+            status='completed'
+        ).count()
+
+        remaining_attempts = test.attempts_allowed - completed_count
 
         return Response({
             'message': 'Тест успешно завершен',
-            'result': TestResultSerializer(result).data
+            'result': TestResultSerializer(result).data,
+            'attempts_info': {
+                'completed_attempts': completed_count,
+                'remaining_attempts': remaining_attempts,
+                'total_allowed': test.attempts_allowed
+            }
         })
 
 

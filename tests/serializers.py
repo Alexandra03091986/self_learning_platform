@@ -8,9 +8,9 @@ class AnswerOptionSerializer(serializers.ModelSerializer):
     class Meta:
         model = AnswerOption
         fields = ['id', 'text', 'is_correct', 'order']
-        extra_kwargs = {
-            'is_correct': {'write_only': True}  # Не показываем правильность студентам
-        }
+        # extra_kwargs = {
+        #     'is_correct': {'write_only': True}  # Не показываем правильность студентам
+        # }
 
 
 class AnswerOptionStudentSerializer(serializers.ModelSerializer):
@@ -18,7 +18,7 @@ class AnswerOptionStudentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = AnswerOption
-        fields = ['id', 'text', 'order']
+        fields = ['id', 'text']
 
 
 class QuestionSerializer(serializers.ModelSerializer):
@@ -32,12 +32,10 @@ class QuestionSerializer(serializers.ModelSerializer):
 
 class QuestionStudentSerializer(serializers.ModelSerializer):
     """Сериализатор для вопросов (для студентов - без правильных ответов)"""
-    answer_options = AnswerOptionStudentSerializer(many=True, read_only=True)
-
+    answer_options = AnswerOptionStudentSerializer(many=True, read_only=True, source='answers')
     class Meta:
         model = Question
         fields = ['id', 'question_type', 'text', 'points', 'order', 'answer_options']
-
 
 class TestSerializer(serializers.ModelSerializer):
     """Сериализатор для тестов (для преподавателей)"""
@@ -114,7 +112,7 @@ class UserAnswerSerializer(serializers.ModelSerializer):
         model = UserAnswer
         fields = [
             'id', 'attempt', 'question', 'question_text',
-            'selected_options', 'text_answer', 'is_correct',
+            'selected_options', 'is_correct',
             'points_earned', 'answered_at'
         ]
         read_only_fields = ['is_correct', 'points_earned']
@@ -128,11 +126,10 @@ class SubmitAnswerSerializer(serializers.Serializer):
         required=False,
         default=[]
     )
-    text_answer = serializers.CharField(required=False, allow_blank=True)
 
     def validate(self, data):
         """Валидация в зависимости от типа вопроса"""
-        if not data.get('selected_options') and not data.get('text_answer'):
+        if not data.get('selected_options'):
             raise serializers.ValidationError("Необходимо предоставить ответ")
         return data
 

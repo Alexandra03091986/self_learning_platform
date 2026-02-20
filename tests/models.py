@@ -79,7 +79,6 @@ class Question(models.Model):
     QUESTION_TYPES = (
         ("single", "Один вариант"),
         ("multiple", "Несколько вариантов"),
-        ("text", "Текстовый ответ"),
     )
 
     test = models.ForeignKey(
@@ -217,7 +216,13 @@ class TestAttempt(models.Model):
         verbose_name = "Попытка теста"
         verbose_name_plural = "Попытки тестов"
         ordering = ['-started_at']
-        unique_together = ['test', 'user', 'status']  # Только одна активная попытка
+        constraints = [
+            models.UniqueConstraint(
+                fields=['test', 'user'],
+                condition=models.Q(status='in_progress'),
+                name='unique_active_attempt'
+            )
+        ]
 
     def __str__(self):
         return f"{self.user.username} - {self.test.title} ({self.percentage}%)"
@@ -241,11 +246,6 @@ class UserAnswer(models.Model):
         blank=True,
         verbose_name="Выбранные варианты",
         related_name='user_answers'
-    )
-    text_answer = models.TextField(
-        blank=True,
-        null=True,
-        verbose_name="Текстовый ответ"
     )
     is_correct = models.BooleanField(
         null=True,

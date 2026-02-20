@@ -6,10 +6,10 @@ from .views import TestViewSet, TestAttemptViewSet, TestResultViewSet
 app_name = TestsConfig.name
 
 router = DefaultRouter()
-router.register(r'tests', TestViewSet, basename='test')
-router.register(r'attempts', TestAttemptViewSet, basename='attempt')
-router.register(r'results', TestResultViewSet, basename='result')
+router.register(r'tests', TestViewSet, basename='test')     # Регистрируем ViewSet для тестов
+router.register(r'attempts', TestAttemptViewSet, basename='attempt')    # для попыток
+router.register(r'results', TestResultViewSet, basename='result')       # для результатов
 
 urlpatterns = [
-    path('', include(router.urls)),
+    path('', include(router.urls)),     # Включаем все URL от роутера
 ]
