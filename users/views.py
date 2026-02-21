@@ -2,6 +2,7 @@ from rest_framework import generics, permissions
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from .models import User
+from .paginations import UserPagination
 from .permissions import IsAdmin
 from .serializers import UserSerializer, UserRegisterSerializer, LoginSerializer
 
@@ -51,6 +52,7 @@ class UserListView(generics.ListAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = [IsAdmin]
+    pagination_class = UserPagination
 
 
 class UserDetailView(generics.RetrieveUpdateDestroyAPIView):

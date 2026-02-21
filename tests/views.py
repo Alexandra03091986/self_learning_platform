@@ -5,6 +5,7 @@ from rest_framework.response import Response
 from rest_framework.exceptions import PermissionDenied, ValidationError
 
 from .models import Test, AnswerOption, TestAttempt, UserAnswer, TestResult
+from .paginations import TestPagination, TestResultPagination
 from .serializers import (
     TestSerializer, TestListSerializer, TestDetailStudentSerializer,
     TestAttemptSerializer, UserAnswerSerializer,
@@ -17,6 +18,7 @@ class TestViewSet(viewsets.ModelViewSet):
     """ViewSet для управления тестами"""
     queryset = Test.objects.all()
     permission_classes = [permissions.IsAuthenticated]
+    pagination_class = TestPagination
 
     def get_serializer_class(self):
         """Выбор сериализатора в зависимости от действия и роли"""
@@ -199,74 +201,6 @@ class TestViewSet(viewsets.ModelViewSet):
         # 7. Завершаем тест
         return self._finish_attempt(test, attempt, total_points, max_points)
 
-        # test = self.get_object()
-        # serializer = TestSubmitSerializer(data=request.data)
-        # serializer.is_valid(raise_exception=True)
-        #
-        # # Получаем или создаем попытку
-        # attempt = TestAttempt.objects.filter(
-        #     test=test,
-        #     user=request.user,
-        #     status='in_progress'
-        # ).first()
-        #
-        # if not attempt:
-        #     # Проверка лимита попыток
-        #     attempts_count = TestAttempt.objects.filter(
-        #         test=test,
-        #         user=request.user,
-        #         status='completed'
-        #     ).count()
-        #
-        #     if attempts_count >= test.attempts_allowed:
-        #         raise PermissionDenied(f"Лимит попыток исчерпан")
-        #
-        #     attempt = TestAttempt.objects.create(test=test, user=request.user)
-        #
-        # # Проверка времени
-        # if test.time_limit:
-        #     minutes_passed = (timezone.now() - attempt.started_at).total_seconds() / 60
-        #     if minutes_passed > test.time_limit:
-        #         attempt.status = 'timeout'
-        #         attempt.save()
-        #         raise ValidationError("Время вышло")
-        #
-        # # Проверяем, не отправлял ли уже ответы
-        # if UserAnswer.objects.filter(attempt=attempt).exists():
-        #     raise ValidationError("Вы уже отправили ответы на этот тест")
-        #
-        # # Обработка ответов
-        # answers_data = serializer.validated_data['answers']
-        # total_points = 0
-        # max_points = 0
-        #
-        # for question in test.questions.all():
-        #     max_points += question.points
-        #     user_answer_ids = answers_data.get(str(question.id), [])
-        #
-        #     # Создаем ответ
-        #     answer, created = UserAnswer.objects.update_or_create(
-        #         attempt=attempt,
-        #         question=question,
-        #         defaults={}
-        #     )
-        #
-        #     # Очищаем старые выбранные опции
-        #     answer.selected_options.clear()
-        #
-        #     # Добавляем выбранные варианты
-        #     if user_answer_ids:
-        #         options = AnswerOption.objects.filter(id__in=user_answer_ids, question=question)
-        #         answer.selected_options.set(options)
-        #
-        #     # Оцениваем ответ
-        #     self._evaluate_answer(answer, question)
-        #     if answer.is_correct:
-        #         total_points += question.points
-        #
-        # # Завершаем тест
-        # return self._finish_attempt(test, attempt, total_points, max_points)
-
     def _evaluate_answer(self, answer, question):
         """Оценка ответа на вопрос"""
         correct_options = set(question.answers.filter(is_correct=True).values_list('id', flat=True))
@@ -279,23 +213,6 @@ class TestViewSet(viewsets.ModelViewSet):
 
         answer.points_earned = question.points if answer.is_correct else 0
         answer.save()
-        # if question.question_type == 'text':
-        #     # Текстовые ответы требуют ручной проверки
-        #     answer.is_correct = None
-        #     answer.points_earned = 0
-        # else:
-        #     correct_options = set(question.answers.filter(is_correct=True).values_list('id', flat=True))
-        #     selected_options = set(answer.selected_options.values_list('id', flat=True))
-        #
-        #     if question.question_type == 'single':
-        #         # answer.is_correct = (selected_options == correct_options and len(selected_options) == 1)
-        #         answer.is_correct = (selected_options == correct_options)
-        #     else:  # multiple
-        #         answer.is_correct = (selected_options == correct_options)
-        #
-        #     answer.points_earned = question.points if answer.is_correct else 0
-        #
-        # answer.save()
 
     def _finish_attempt(self, test, attempt, total_points, max_points):
         """Завершение попытки и сохранение результата"""
@@ -373,6 +290,7 @@ class TestResultViewSet(viewsets.ReadOnlyModelViewSet):
     """Просмотр результатов"""
     serializer_class = TestResultSerializer
     permission_classes = [permissions.IsAuthenticated]
+    pagination_class = TestResultPagination
 
     def get_queryset(self):
         user = self.request.user
