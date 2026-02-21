@@ -34,7 +34,7 @@ class UserRegisterSerializer(serializers.ModelSerializer):
     class Meta:
         """Метаданные сериализатора."""
         model = User
-        fields = ('id', 'username', 'email', 'password', 'password_confirm', 'first_name', 'last_name', 'role')
+        fields = ('id', 'username', 'email', 'password', 'password_confirm', 'first_name', 'last_name')
         extra_kwargs = {
             'first_name': {
                 'required': True,
@@ -52,28 +52,7 @@ class UserRegisterSerializer(serializers.ModelSerializer):
                 'required': True,
                 'error_messages': {'required': 'Имя пользователя обязательно'}
             },
-            'role': {
-                'required': True,
-                'error_messages': {
-                    'required': 'Пожалуйста, выберите роль (teacher или student)'
-                }
-            }
         }
-
-    def validate_role(self, value):
-        """
-        Проверка выбранной роли.
-        Запрещаем регистрацию как администратор.
-        """
-        if value == 'admin':
-            raise serializers.ValidationError(
-                'Невозможно зарегистрироваться как администратор'
-            )
-        if value not in ['teacher', 'student']:
-            raise serializers.ValidationError(
-                'Роль должна быть "teacher" (преподаватель) или "student" (студент)'
-            )
-        return value
 
     def validate_username(self, value):
         """
@@ -105,10 +84,12 @@ class UserRegisterSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         """
-        Создание пользователя с указанной ролью.
+        Создание нового пользователя.
+
+        Удаляет поле password_confirm из данных и создает пользователя
+        с ролью 'student' по умолчанию.
         """
         validated_data.pop('password_confirm')
-        # Создаём пользователя через create_user (хэширует пароль)
         user = User.objects.create_user(**validated_data)
         return user
 
@@ -168,36 +149,12 @@ class LoginSerializer(serializers.Serializer):
 
         return authenticated_user
 
-# class LoginSerializer(serializers.Serializer):
-#     """
-#     Сериализатор для входа пользователя.
-#     """
-#     username = serializers.CharField(required=False)
-#     email = serializers.EmailField(required=False)
-#     password = serializers.CharField(write_only=True)
-#
-#     def validate(self, data):
-#         # Поддержка входа по username или email
-#         username = data.get('username')
-#         email = data.get('email')
-#         password = data.get('password')
-#
-#         if not username and not email:
-#             raise serializers.ValidationError('Укажите username или email')
-#
-#         # Аутентификация по username
-#         user = None
-#         if username:
-#             user = authenticate(username=username, password=password)
-#
-#         # Если не получилось, пробуем найти пользователя по email
-#         if not user and email:
-#             try:
-#                 user_obj = User.objects.get(email=email)
-#                 user = authenticate(username=user_obj.username, password=password)
-#             except User.DoesNotExist:
-#                 pass
-#
-#         if user and user.is_active:
-#             return user
-#         raise serializers.ValidationError('Неверный логин или пароль')
+
+class UserAdminSerializer(serializers.ModelSerializer):
+    """Сериализатор для админов (можно менять роль)"""
+
+    class Meta:
+        model = User
+        fields = ('id', 'username', 'email', 'first_name', 'last_name',
+                  'role', 'avatar', 'bio', 'is_active', 'is_staff')
+        read_only_fields = ('id',)

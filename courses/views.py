@@ -4,6 +4,7 @@ from rest_framework.viewsets import ModelViewSet
 from rest_framework import serializers, permissions
 
 from courses.models import Course, Lesson
+from courses.paginations import CoursePagination, LessonPagination
 from courses.serializers import CourseSerializer, LessonSerializer
 from users.permissions import IsTeacher, IsOwnerOrAdmin
 
@@ -13,6 +14,7 @@ class CourseViewSet(ModelViewSet):
 
     queryset = Course.objects.all()
     serializer_class = CourseSerializer
+    pagination_class = CoursePagination
 
     def get_permissions(self):
         """
@@ -42,6 +44,7 @@ class LessonViewSet(ModelViewSet):
     """ViewSet для выполнения всех CRUD операций с уроками."""
     queryset = Lesson.objects.all()
     serializer_class = LessonSerializer
+    pagination_class = LessonPagination
 
     def get_permissions(self):
         """

@@ -76,6 +76,13 @@ class UserDetailView(generics.RetrieveUpdateDestroyAPIView):
         # Для просмотра - все авторизованные (но queryset ограничит)
         return [permissions.IsAuthenticated()]
 
+    def get_serializer_class(self):
+        """Для админов используем специальный сериализатор с возможностью менять роль"""
+        if self.request.user.role == 'admin' and self.request.method in ['PUT', 'PATCH']:
+            from .serializers import UserAdminSerializer
+            return UserAdminSerializer
+        return UserSerializer
+
     def get_queryset(self):
         """Фильтрация queryset в зависимости от роли пользователя"""
         # Проверяем, что пользователь аутентифицирован
