@@ -1,6 +1,9 @@
 from rest_framework import generics, permissions
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
+
+from courses.models import Course
+from tests.models import TestAttempt
 from .models import User
 from .paginations import UserPagination
 from .permissions import IsAdmin
@@ -46,8 +49,8 @@ class LoginView(generics.GenericAPIView):
 class UserListView(generics.ListAPIView):
     """
     Получение списка всех пользователей.
-    Возвращает список всех зарегистрированных пользователей.
-    Доступно только администраторам.
+    Доступно ТОЛЬКО администраторам.
+    Преподаватели НЕ видят список пользователей (только своих студентов через контекст курсов)
     """
     queryset = User.objects.all()
     serializer_class = UserSerializer
@@ -61,7 +64,7 @@ class UserDetailView(generics.RetrieveUpdateDestroyAPIView):
 
     Эндпоинт для работы с конкретным пользователем. Права доступа зависят от роли:
     - Администраторы: полный доступ к любому профилю (просмотр, изменение, удаление)
-    - Преподаватели: просмотр любого профиля, но без возможности изменения/удаления
+    - Преподаватели: просмотр ТОЛЬКО СВОЕГО профиля (не видят чужие)
     - Студенты: просмотр только своего профиля, без возможности изменения/удаления
     - Анонимные пользователи: доступ запрещён
     """
@@ -80,17 +83,63 @@ class UserDetailView(generics.RetrieveUpdateDestroyAPIView):
 
     def get_serializer_class(self):
         """Для админов используем специальный сериализатор с возможностью менять роль"""
-        if self.request.user.role == 'admin' and self.request.method in ['PUT', 'PATCH']:
+        if self.request.user.is_authenticated and self.request.user.role == 'admin' and self.request.method in ['PUT', 'PATCH']:
             from .serializers import UserAdminSerializer
             return UserAdminSerializer
         return UserSerializer
 
     def get_queryset(self):
-        """Фильтрация queryset в зависимости от роли пользователя"""
+        """Фильтрация queryset в зависимости от роли пользователя.
+        Строго по ТЗ:
+        - Админ: видит всех
+        - Преподаватель: видит ТОЛЬКО себя
+        - Студент: видит ТОЛЬКО себя
+        """
         # Проверяем, что пользователь аутентифицирован
         if not self.request.user.is_authenticated:
             return User.objects.none()  # Пустой queryset для анонимов
-        # Администраторы и преподаватели видят всех пользователей
-        if self.request.user.role in ['admin', 'teacher']:
+
+        # Админ видит всех
+        if self.request.user.role == 'admin':
             return User.objects.all()
-        return User.objects.filter(id=self.request.user.id)     # Студент - только себя
+
+        # Преподаватель и студент видят только себя
+        return User.objects.filter(id=self.request.user.id)
+
+
+class CourseStudentsView(generics.ListAPIView):
+    """
+    Просмотр студентов, проходящих курс (для преподавателей).
+    Преподаватель может видеть только студентов своих курсов.
+    """
+    serializer_class = UserSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+
+        # Только преподаватели и админы
+        if user.role not in ['admin', 'teacher']:
+            return User.objects.none()
+
+        course_id = self.kwargs.get('course_id')
+
+        try:
+            course = Course.objects.get(id=course_id)
+
+            # Проверяем, что преподаватель владеет этим курсом
+            if user.role == 'teacher' and course.owner != user:
+                return User.objects.none()
+
+            # Находим всех студентов, которые проходили тесты этого курса
+            student_ids = TestAttempt.objects.filter(
+                test__lesson__course=course
+            ).values_list('user_id', flat=True).distinct()
+
+            return User.objects.filter(
+                id__in=student_ids,
+                role='student'
+            )
+
+        except Course.DoesNotExist:
+            return User.objects.none()

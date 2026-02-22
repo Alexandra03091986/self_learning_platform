@@ -23,7 +23,7 @@ class AnswerOptionStudentSerializer(serializers.ModelSerializer):
 
 class QuestionSerializer(serializers.ModelSerializer):
     """Сериализатор для вопросов (для преподавателей)"""
-    answer_options = AnswerOptionSerializer(many=True, read_only=True)
+    answer_options = AnswerOptionSerializer(many=True, read_only=True, source='answers')
 
     class Meta:
         model = Question

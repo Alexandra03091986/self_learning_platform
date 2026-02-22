@@ -1,7 +1,9 @@
 from rest_framework.exceptions import NotAuthenticated
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.viewsets import ModelViewSet
 
-from rest_framework import serializers, permissions
+from rest_framework import serializers
+from rest_framework.exceptions import PermissionDenied
 
 from courses.models import Course, Lesson
 from courses.paginations import CoursePagination, LessonPagination
@@ -31,7 +33,7 @@ class CourseViewSet(ModelViewSet):
             return [IsOwnerOrAdmin()]
         else:
             # Просмотр - все авторизованные
-            return [permissions.IsAuthenticated()]
+            return [IsAuthenticated()]
 
     def perform_create(self, serializer: serializers.Serializer) -> None:
         """Автоматически устанавливает текущего пользователя как владельца создаваемого объекта."""
@@ -58,7 +60,7 @@ class LessonViewSet(ModelViewSet):
         elif self.action in ['update', 'partial_update', 'destroy']:
             return [IsOwnerOrAdmin()]
         else:
-            return [permissions.IsAuthenticated()]
+            return [IsAuthenticated()]
 
     def perform_create(self, serializer: serializers.Serializer) -> None:
         """Автоматически устанавливает текущего пользователя как владельца создаваемого объекта."""
@@ -72,6 +74,6 @@ class LessonViewSet(ModelViewSet):
 
         # Разрешаем админу или владельцу курса
         if not (self.request.user.role == 'admin' or course.owner == self.request.user):
-            raise permissions.PermissionDenied('Можно создавать уроки только в своих курсах')
+            raise PermissionDenied('Можно создавать уроки только в своих курсах')
         # Сохраняем с владельцем
         serializer.save(owner=self.request.user)

@@ -65,7 +65,17 @@ class TestViewSet(viewsets.ModelViewSet):
         return super().get_permissions()
 
     def perform_create(self, serializer):
-        """Установка владельца при создании"""
+        """Установка владельца при создании и проверка прав на урок."""
+        lesson = serializer.validated_data.get('lesson')
+
+        # Проверка для преподавателей
+        if self.request.user.role == 'teacher':
+            if lesson.owner != self.request.user:
+                raise PermissionDenied(
+                    "Вы можете создавать тесты только для своих уроков"
+                )
+
+        # Админы могут создавать для любых уроков
         serializer.save(owner=self.request.user)
 
     @action(detail=True, methods=['post'])

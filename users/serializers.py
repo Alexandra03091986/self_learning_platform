@@ -1,5 +1,4 @@
 from rest_framework import serializers
-from django.contrib.auth import authenticate
 
 from django.contrib.auth import get_user_model
 
@@ -96,10 +95,16 @@ class UserRegisterSerializer(serializers.ModelSerializer):
 
 class LoginSerializer(serializers.Serializer):
     """
-    Сериализатор для входа пользователя по email.
+    Сериализатор для входа пользователя.
+    Поддерживает вход по email или username.
     """
+    username = serializers.CharField(
+        required=False,
+        help_text="Имя пользователя (если вход по username)"
+    )
     email = serializers.EmailField(
-        required=True,
+        required=False,
+        help_text="Email (если вход по email)",
         error_messages={
             'required': 'Email обязателен для входа',
             'invalid': 'Введите корректный email'
@@ -115,39 +120,75 @@ class LoginSerializer(serializers.Serializer):
     )
 
     def validate(self, data):
+        username = data.get('username')
         email = data.get('email')
         password = data.get('password')
 
-        if not email:
+        # Проверяем, что указан хотя бы один идентификатор
+        if not username and not email:
             raise serializers.ValidationError(
-                {'email': 'Укажите email'}
+                'Укажите username или email для входа'
             )
 
-        # Ищем пользователя по email (ОДИН запрос к БД!)
-        try:
-            user = User.objects.get(email=email)
-        except User.DoesNotExist:
-            raise serializers.ValidationError(
-                {'email': 'Пользователь с таким email не найден'}
-            )
+        # Ищем пользователя
+        user = None
+        if username:
+            try:
+                user = User.objects.get(username=username)
+            except User.DoesNotExist:
+                raise serializers.ValidationError(
+                    {'username': 'Пользователь с таким именем не найден'}
+                )
+        elif email:
+            try:
+                user = User.objects.get(email=email)
+            except User.DoesNotExist:
+                raise serializers.ValidationError(
+                    {'email': 'Пользователь с таким email не найден'}
+                )
 
-        # Аутентифицируем по username (т.к. authenticate работает с username)
-        authenticated_user = authenticate(
-            username=user.username,
-            password=password
-        )
-
-        if not authenticated_user:
+        # Проверяем пароль
+        if not user.check_password(password):
             raise serializers.ValidationError(
                 {'password': 'Неверный пароль'}
             )
 
-        if not authenticated_user.is_active:
+        if not user.is_active:
             raise serializers.ValidationError(
-                {'email': 'Учётная запись заблокирована'}
+                'Учётная запись заблокирована'
             )
 
-        return authenticated_user
+        return user
+
+        # if not email:
+        #     raise serializers.ValidationError(
+        #         {'email': 'Укажите email'}
+        #     )
+        # Ищем пользователя по email (ОДИН запрос к БД!)
+        # try:
+        #     user = User.objects.get(email=email)
+        # except User.DoesNotExist:
+        #     raise serializers.ValidationError(
+        #         {'email': 'Пользователь с таким email не найден'}
+        #     )
+        #
+        # # Аутентифицируем по username (т.к. authenticate работает с username)
+        # authenticated_user = authenticate(
+        #     username=user.username,
+        #     password=password
+        # )
+        #
+        # if authenticated_user is None:
+        #     raise serializers.ValidationError(
+        #         {'password': 'Неверный пароль'}
+        #     )
+        #
+        # if not authenticated_user.is_active:
+        #     raise serializers.ValidationError(
+        #         {'email': 'Учётная запись заблокирована'}
+        #     )
+        #
+        # return authenticated_user
 
 
 class UserAdminSerializer(serializers.ModelSerializer):
