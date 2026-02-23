@@ -32,13 +32,8 @@ class Course(models.Model):
         verbose_name="Владелец курса",
         help_text="Укажите владельца курса",
     )
-    created_at = models.DateTimeField(
-        verbose_name="Дата создания",
-        auto_now_add=True
-    )
-    updated_at = models.DateTimeField(
-        verbose_name="Дата обновления",
-        auto_now=True)
+    created_at = models.DateTimeField(verbose_name="Дата создания", auto_now_add=True)
+    updated_at = models.DateTimeField(verbose_name="Дата обновления", auto_now=True)
 
     class Meta:
         verbose_name = "Курс"
@@ -90,23 +85,14 @@ class Lesson(models.Model):
         verbose_name="Владелец",
         help_text="Укажите владельца",
     )
-    order = models.PositiveIntegerField(
-        verbose_name="Порядок сортировки",
-        default=0
-    )
-    created_at = models.DateTimeField(
-        verbose_name="Дата создания",
-        auto_now_add=True
-    )
-    updated_at = models.DateTimeField(
-        verbose_name="Дата обновления",
-        auto_now=True
-    )
+    order = models.PositiveIntegerField(verbose_name="Порядок сортировки", default=0)
+    created_at = models.DateTimeField(verbose_name="Дата создания", auto_now_add=True)
+    updated_at = models.DateTimeField(verbose_name="Дата обновления", auto_now=True)
 
     def __str__(self):
-        return f"{self.course.title} - {self.title}"    # noqa
+        return f"{self.course.title} - {self.title}"  # noqa
 
     class Meta:
         verbose_name = "Урок"
         verbose_name_plural = "Уроки"
-        ordering = ['course', 'order']
+        ordering = ["course", "order"]

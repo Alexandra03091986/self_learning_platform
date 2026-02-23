@@ -3,14 +3,16 @@ from rest_framework import permissions
 
 class IsAdmin(permissions.BasePermission):
     """Только администратор"""
+
     def has_permission(self, request, view):
-        return request.user.is_authenticated and request.user.role == 'admin'
+        return request.user.is_authenticated and request.user.role == "admin"
 
 
 class IsTeacher(permissions.BasePermission):
     """Преподаватель или админ"""
+
     def has_permission(self, request, view):
-        return request.user.is_authenticated and request.user.role in ['admin', 'teacher']
+        return request.user.is_authenticated and request.user.role in ["admin", "teacher"]
 
 
 class IsOwnerOrAdmin(permissions.BasePermission):
@@ -29,15 +31,15 @@ class IsOwnerOrAdmin(permissions.BasePermission):
             return True
 
         # Админ может всё
-        if request.user.role == 'admin':
+        if request.user.role == "admin":
             return True
 
         # Проверка владельца (работает и для Course, и для Lesson)
-        if hasattr(obj, 'owner'):
+        if hasattr(obj, "owner"):
             return obj.owner == request.user
 
         # Для Lesson проверяем владельца курса
-        if hasattr(obj, 'course') and hasattr(obj.course, 'owner'):
+        if hasattr(obj, "course") and hasattr(obj.course, "owner"):
             return obj.course.owner == request.user
 
         return False
