@@ -126,14 +126,14 @@ class TestViewSet(viewsets.ModelViewSet):
         completed_count = TestAttempt.objects.filter(test=test, user=request.user, status="completed").count()
 
         if completed_count >= test.attempts_allowed:
-            # Получаем лучший результат для информативного сообщения
-            best_result = (
-                TestResult.objects.filter(test=test, user=request.user, status="completed")
+            # Получаем лучшую завершенную попытку
+            best_attempt = (
+                TestAttempt.objects.filter(test=test, user=request.user, status="completed")
                 .order_by("-percentage")
                 .first()
             )
 
-            best_percentage = best_result.percentage if best_result else 0
+            best_percentage = best_attempt.percentage if best_attempt else 0
 
             raise PermissionDenied(
                 f"Лимит попыток исчерпан ({test.attempts_allowed}). Лучший результат: {best_percentage}%"
