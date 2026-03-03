@@ -52,7 +52,7 @@ class TestAdmin(admin.ModelAdmin):
 class QuestionAdmin(admin.ModelAdmin):
     """Настройка отображения вопроса в админке"""
 
-    list_display = ("text", "test", "question_type", "points", "order")
+    list_display = ("id", "text", "test", "question_type", "points", "order")
     list_filter = ("question_type", "test")
     search_fields = ("text",)
     inlines = [AnswerOptionInline]
