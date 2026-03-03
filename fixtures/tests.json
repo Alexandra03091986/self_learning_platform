@@ -1,0 +1,186 @@
+[
+  {
+    "model": "tests.test",
+    "pk": 1,
+    "fields": {
+      "lesson": 2,
+      "title": "Проверка знаний: Переменные и типы данных",
+      "description": "Тест для проверки усвоения материала по переменным и типам данных в Python",
+      "time_limit": 15,
+      "attempts_allowed": 3,
+      "passing_score": 70,
+      "is_active": true,
+      "owner": 2,
+      "created_at": "2026-02-23T10:00:00Z",
+      "updated_at": "2026-02-23T10:00:00Z"
+    }
+  },
+  {
+    "model": "tests.test",
+    "pk": 2,
+    "fields": {
+      "lesson": 3,
+      "title": "Условные операторы и циклы в Python",
+      "description": "Проверьте свои знания по if/else и циклам",
+      "time_limit": 20,
+      "attempts_allowed": 2,
+      "passing_score": 80,
+      "is_active": true,
+      "owner": 2,
+      "created_at": "2026-02-23T10:00:00Z",
+      "updated_at": "2026-02-23T10:00:00Z"
+    }
+  },
+  {
+    "model": "tests.test",
+    "pk": 3,
+    "fields": {
+      "lesson": 4,
+      "title": "Основы Java",
+      "description": "Проверочный тест по основам Java",
+      "time_limit": 10,
+      "attempts_allowed": 1,
+      "passing_score": 60,
+      "is_active": true,
+      "owner": 3,
+      "created_at": "2026-02-23T10:00:00Z",
+      "updated_at": "2026-02-23T10:00:00Z"
+    }
+  },
+  {
+    "model": "tests.question",
+    "pk": 1,
+    "fields": {
+      "test": 1,
+      "question_type": "single",
+      "text": "Какой тип данных используется для хранения целых чисел в Python?",
+      "points": 1,
+      "order": 1,
+      "explanation": "int - это тип для целых чисел в Python"
+    }
+  },
+  {
+    "model": "tests.question",
+    "pk": 2,
+    "fields": {
+      "test": 1,
+      "question_type": "single",
+      "text": "Что выведет следующий код: print(type(3.14))?",
+      "points": 1,
+      "order": 2,
+      "explanation": "3.14 - это число с плавающей точкой (float)"
+    }
+  },
+  {
+    "model": "tests.question",
+    "pk": 3,
+    "fields": {
+      "test": 1,
+      "question_type": "multiple",
+      "text": "Какие из перечисленных типов являются изменяемыми (mutable) в Python?",
+      "points": 2,
+      "order": 3,
+      "explanation": "Списки и словари можно изменять после создания"
+    }
+  },
+  {
+    "model": "tests.answeroption",
+    "pk": 1,
+    "fields": {
+      "question": 1,
+      "text": "int",
+      "is_correct": true,
+      "order": 1
+    }
+  },
+  {
+    "model": "tests.answeroption",
+    "pk": 2,
+    "fields": {
+      "question": 1,
+      "text": "float",
+      "is_correct": false,
+      "order": 2
+    }
+  },
+  {
+    "model": "tests.answeroption",
+    "pk": 3,
+    "fields": {
+      "question": 1,
+      "text": "str",
+      "is_correct": false,
+      "order": 3
+    }
+  },
+  {
+    "model": "tests.answeroption",
+    "pk": 4,
+    "fields": {
+      "question": 2,
+      "text": "<class 'int'>",
+      "is_correct": false,
+      "order": 1
+    }
+  },
+  {
+    "model": "tests.answeroption",
+    "pk": 5,
+    "fields": {
+      "question": 2,
+      "text": "<class 'float'>",
+      "is_correct": true,
+      "order": 2
+    }
+  },
+  {
+    "model": "tests.answeroption",
+    "pk": 6,
+    "fields": {
+      "question": 2,
+      "text": "<class 'str'>",
+      "is_correct": false,
+      "order": 3
+    }
+  },
+  {
+    "model": "tests.answeroption",
+    "pk": 7,
+    "fields": {
+      "question": 3,
+      "text": "list",
+      "is_correct": true,
+      "order": 1
+    }
+  },
+  {
+    "model": "tests.answeroption",
+    "pk": 8,
+    "fields": {
+      "question": 3,
+      "text": "tuple",
+      "is_correct": false,
+      "order": 2
+    }
+  },
+  {
+    "model": "tests.answeroption",
+    "pk": 9,
+    "fields": {
+      "question": 3,
+      "text": "dict",
+      "is_correct": true,
+      "order": 3
+    }
+  },
+  {
+    "model": "tests.answeroption",
+    "pk": 10,
+    "fields": {
+      "question": 3,
+      "text": "str",
+      "is_correct": false,
+      "order": 4
+    }
+  }
+]

@@ -1,0 +1,94 @@
+[
+  {
+    "model": "courses.course",
+    "pk": 1,
+    "fields": {
+      "title": "Python для начинающих",
+      "description": "Полный курс по Python для тех, кто только начинает свой путь в программировании. Рассматриваются основы синтаксиса, типы данных, функции, классы и многое другое.",
+      "picture": "courses/picture/python_course.jpg",
+      "owner": 2,
+      "created_at": "2026-02-23T10:00:00Z",
+      "updated_at": "2026-02-23T10:00:00Z"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": 2,
+    "fields": {
+      "title": "Java для начинающих",
+      "description": "Введение в Java программирование. Изучите основы объектно-ориентированного программирования на примере Java.",
+      "picture": "courses/picture/java_course.jpg",
+      "owner": 3,
+      "created_at": "2026-02-23T10:00:00Z",
+      "updated_at": "2026-02-23T10:00:00Z"
+    }
+  },
+  {
+    "model": "courses.course",
+    "pk": 3,
+    "fields": {
+      "title": "JavaScript для веб-разработки",
+      "description": "Изучите современный JavaScript для создания интерактивных веб-сайтов. Включает ES6+, DOM, асинхронность и работу с API.",
+      "picture": "courses/picture/js_course.jpg",
+      "owner": 2,
+      "created_at": "2026-02-23T10:00:00Z",
+      "updated_at": "2026-02-23T10:00:00Z"
+    }
+  },
+  {
+    "model": "courses.lesson",
+    "pk": 1,
+    "fields": {
+      "course": 1,
+      "title": "Введение в Python",
+      "description": "Знакомство с языком Python, установка, первая программа",
+      "video_url": "https://www.youtube.com/watch?v=example1",
+      "owner": 2,
+      "order": 1,
+      "created_at": "2026-02-23T10:00:00Z",
+      "updated_at": "2026-02-23T10:00:00Z"
+    }
+  },
+  {
+    "model": "courses.lesson",
+    "pk": 2,
+    "fields": {
+      "course": 1,
+      "title": "Переменные и типы данных",
+      "description": "Изучаем числа, строки, списки и словари в Python",
+      "video_url": "https://www.youtube.com/watch?v=example2",
+      "owner": 2,
+      "order": 2,
+      "created_at": "2026-02-23T10:00:00Z",
+      "updated_at": "2026-02-23T10:00:00Z"
+    }
+  },
+  {
+    "model": "courses.lesson",
+    "pk": 3,
+    "fields": {
+      "course": 1,
+      "title": "Условные операторы и циклы",
+      "description": "if/else, for, while в Python",
+      "video_url": "https://www.youtube.com/watch?v=example3",
+      "owner": 2,
+      "order": 3,
+      "created_at": "2026-02-23T10:00:00Z",
+      "updated_at": "2026-02-23T10:00:00Z"
+    }
+  },
+  {
+    "model": "courses.lesson",
+    "pk": 4,
+    "fields": {
+      "course": 2,
+      "title": "Введение в Java",
+      "description": "Установка JDK, первая программа на Java",
+      "video_url": "https://www.youtube.com/watch?v=example4",
+      "owner": 3,
+      "order": 1,
+      "created_at": "2026-02-23T10:00:00Z",
+      "updated_at": "2026-02-23T10:00:00Z"
+    }
+  }
+]
